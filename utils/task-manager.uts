@@ -1,0 +1,53 @@
+export type Priority = 'High' | 'Medium' | 'Low';
+
+export interface Task {
+	id: string;
+	title: string;
+	description: string;
+	deadline: string;
+	priority: Priority;
+}
+
+const STORAGE_KEY = 'tasks';
+
+export const getTasks = (): Task[] => {
+	const tasksStr = uni.getStorageSync(STORAGE_KEY);
+	if (tasksStr) {
+		try {
+			return JSON.parse<Task[]>(tasksStr as string) || [];
+		} catch (e) {
+			return [];
+		}
+	}
+	return [];
+};
+
+export const saveTasks = (tasks: Task[]) => {
+	uni.setStorageSync(STORAGE_KEY, JSON.stringify(tasks));
+};
+
+export const addTask = (task: Task) => {
+	const tasks = getTasks();
+	tasks.push(task);
+	saveTasks(tasks);
+};
+
+export const updateTask = (updatedTask: Task) => {
+	const tasks = getTasks();
+	const index = tasks.findIndex(t => t.id === updatedTask.id);
+	if (index !== -1) {
+		tasks[index] = updatedTask;
+		saveTasks(tasks);
+	}
+};
+
+export const deleteTask = (id: string) => {
+	const tasks = getTasks();
+	const filteredTasks = tasks.filter(t => t.id !== id);
+	saveTasks(filteredTasks);
+};
+
+export const getTaskById = (id: string): Task | null => {
+	const tasks = getTasks();
+	return tasks.find(t => t.id === id) || null;
+};

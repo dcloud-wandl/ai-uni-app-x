@@ -48,4 +48,9 @@
 	.uni-column {
 		flex-direction: column;
 	}
+
+	/* Vue 绿风格全局样式 */
+	button {
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+	}
 </style>

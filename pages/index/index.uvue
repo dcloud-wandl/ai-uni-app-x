@@ -1,24 +1,229 @@
 <template>
-	<view>
-		<image class="logo" src="/static/logo.png"></image>
-		<text class="title">{{title}}</text>
+	<view class="container">
+		<!-- 任务列表 -->
+		<scroll-view class="task-list" scroll-y="true" v-if="tasks.length > 0">
+			<view class="task-item-wrapper" v-for="(task, index) in tasks" :key="task.id">
+				<view class="task-item-container" :class="{ 'show-actions': activeTaskId === task.id }">
+					<view class="task-item" @click="goToDetail(task.id)" @longpress="toggleActions(task.id)">
+						<view class="task-header">
+							<text class="task-title">{{ task.title }}</text>
+							<text class="task-priority" :class="'priority-' + task.priority">{{ getPriorityText(task.priority) }}</text>
+						</view>
+						<text class="task-deadline">截止日期: {{ task.deadline }}</text>
+					</view>
+					<view class="task-actions" v-if="activeTaskId === task.id">
+						<button class="action-btn edit-btn" @click="goToEdit(task.id)">编辑</button>
+						<button class="action-btn delete-btn" @click="confirmDelete(task.id)">删除</button>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+
+		<!-- 空状态 -->
+		<view class="empty-state" v-else>
+			<text class="empty-text">暂无任务</text>
+		</view>
+
+		<!-- FAB 按钮 -->
+		<button class="fab-button" @click="goToCreate">+</button>
 	</view>
 </template>
 
-<script setup lang="uts">
-	const title = ref('Hello')
+<script lang="uts">
+import { getTasks, deleteTask, Task } from '@/utils/task-manager'
+
+export default {
+	data() {
+		return {
+			tasks: [] as Task[],
+			activeTaskId: ''
+		}
+	},
+	onLoad() {
+		this.loadTasks()
+	},
+	onShow() {
+		// 页面显示时刷新任务列表
+		this.loadTasks()
+	},
+	methods: {
+		loadTasks() {
+			this.tasks = getTasks()
+		},
+		goToDetail(taskId: string) {
+			uni.navigateTo({
+				url: `/pages/task-detail/task-detail?id=${taskId}`
+			})
+		},
+		goToEdit(taskId: string) {
+			uni.navigateTo({
+				url: `/pages/task-edit/task-edit?id=${taskId}`
+			})
+		},
+		goToCreate() {
+			uni.navigateTo({
+				url: '/pages/task-edit/task-edit'
+			})
+		},
+		confirmDelete(taskId: string) {
+			uni.showModal({
+				title: '删除任务',
+				content: '确定要删除这个任务吗？',
+				success: (res) => {
+					if (res.confirm) {
+						deleteTask(taskId)
+						this.loadTasks()
+					}
+				}
+			})
+		},
+		getPriorityText(priority: string): string {
+			const priorityMap: Record<string, string> = {
+				'High': '高',
+				'Medium': '中',
+				'Low': '低'
+			}
+			return priorityMap[priority] || priority
+		},
+		toggleActions(taskId: string) {
+			if (this.activeTaskId === taskId) {
+				this.activeTaskId = ''
+			} else {
+				this.activeTaskId = taskId
+			}
+		}
+	}
+}
 </script>
 
-<style>
-	.logo {
-		height: 100px;
-		width: 100px;
-		margin: 100px auto 25px auto;
-	}
+<style scoped>
+.container {
+	flex: 1;
+	background-color: #f5f5f5;
+	position: relative;
+}
 
-	.title {
-		font-size: 18px;
-		color: #8f8f94;
-		text-align: center;
-	}
+.task-list {
+	flex: 1;
+	padding-bottom: 80px;
+}
+
+.task-item-wrapper {
+	margin-bottom: 8px;
+}
+
+.task-item-container {
+	position: relative;
+	overflow: hidden;
+	transition: all 0.3s ease;
+}
+
+.task-item-container.show-actions {
+	background-color: #42b983;
+}
+
+.task-item {
+	background-color: #ffffff;
+	padding: 16px;
+	border-bottom: 1px solid #efefef;
+	transition: all 0.3s ease;
+}
+
+.task-item-container.show-actions .task-item {
+	margin-right: 180px;
+}
+
+.task-actions {
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 100%;
+	width: 180px;
+	flex-direction: row;
+	background-color: transparent;
+}
+
+.task-header {
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.task-title {
+	font-size: 16px;
+	font-weight: bold;
+	color: #333333;
+	flex: 1;
+}
+
+.task-priority {
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 4px;
+	margin-left: 8px;
+}
+
+.priority-High {
+	background-color: #ffebee;
+	color: #c62828;
+}
+
+.priority-Medium {
+	background-color: #fff3e0;
+	color: #e65100;
+}
+
+.priority-Low {
+	background-color: #e8f5e9;
+	color: #2e7d32;
+}
+
+.task-deadline {
+	font-size: 14px;
+	color: #666666;
+}
+
+.action-btn {
+	flex: 1;
+	width: 90px;
+	height: 100%;
+	border-radius: 0;
+	border: none;
+	font-size: 14px;
+	color: #ffffff;
+}
+
+.edit-btn {
+	background-color: #42b983;
+}
+
+.delete-btn {
+	background-color: #f56c6c;
+}
+
+.empty-state {
+	flex: 1;
+	justify-content: center;
+	align-items: center;
+}
+
+.empty-text {
+	font-size: 16px;
+	color: #999999;
+}
+
+.fab-button {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	width: 56px;
+	height: 56px;
+	border-radius: 28px;
+	background-color: #42b983;
+	color: #ffffff;
+	font-size: 32px;
+	border: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 </style>
